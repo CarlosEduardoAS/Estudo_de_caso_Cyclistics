@@ -1,0 +1,352 @@
+library(tidyverse)  #para importar, limpar e transformar os dados
+library(lubridate)  #manipular dados de data
+library(ggplot2)  #para visualizar os dados
+library(data.table) #manipular dados de forma mais eficiente
+
+setwd("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files")
+
+# 1.Carregando e combinando datasets
+
+Sep_21 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202109-divvy-tripdata")
+Oct_21 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202110-divvy-tripdata")
+Nov_21 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202111-divvy-tripdata")
+Dec_21 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202112-divvy-tripdata")
+Jan_22 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202201-divvy-tripdata")
+Feb_22 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202202-divvy-tripdata")
+Mar_22 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202203-divvy-tripdata")
+Apr_22 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202204-divvy-tripdata")
+May_22 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202205-divvy-tripdata")
+Jun_22 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202206-divvy-tripdata")
+Jul_22 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202207-divvy-tripdata")
+Aug_22 <- read_csv("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/202208-divvy-tripdata")
+
+str(Sep_21)
+str(Oct_21)
+str(Nov_21)
+str(Dec_21)
+str(Jan_22)
+str(Feb_22)
+str(Mar_22)
+str(Apr_22)
+str(May_22)
+str(Jun_22)
+str(Jul_22)
+str(Aug_22)
+
+all_trips <- bind_rows(
+  Sep_21, Oct_21, Nov_21, Dec_21, 
+  Jan_22, Feb_22, Mar_22, Apr_22, May_22, Jun_22, Jul_22, Aug_22
+  )
+
+# 2.Preparando o dataset para análise
+
+# muda o tipo das colunas started_at e ended_at de 'chr' para data
+all_trips$started_at <- as.POSIXct(
+  all_trips$started_at, 
+  format = "%Y-%m-%d %H:%M:%S"
+  )
+
+all_trips$ended_at <- as.POSIXct(
+  all_trips$ended_at, 
+  format = "%Y-%m-%d %H:%M:%S"
+  )
+# ordena por data
+all_trips <- all_trips %>%
+  arrange(started_at)
+
+# calcula o tempo de cada viagem em segundos e muda o tipo para numérico
+all_trips$ride_length <- difftime(
+  all_trips$ended_at, 
+  all_trips$started_at,
+  units = "secs"
+  ) 
+
+all_trips$ride_length <- as.numeric(
+  as.character(all_trips$ride_length)
+  )
+
+# separa colunas para o ano, mês, dia da semana, etc.
+
+
+all_trips$year <- format(
+    all_trips$started_at, 
+    "%Y"
+    )
+
+all_trips$month <- format(
+    all_trips$started_at, 
+    "%m"
+    )
+
+all_trips$week <- format(
+  all_trips$started_at,
+  "%W"
+  )
+
+all_trips$day <- format(
+  all_trips$started_at, 
+  "%d"
+  )
+
+all_trips$day_of_week <- format(
+  all_trips$started_at, 
+  "%A"
+  )
+
+all_trips$YMD <- format(
+  all_trips$started_at, 
+  "%Y-%m-%d"
+  )
+
+all_trips$ToD <- format(
+  all_trips$started_at, 
+  "%H:%M:%S"
+  )
+
+# 3.Limpando o dataset
+
+# remove entradas cujo tempo de viagem é menor que zero
+all_trips_cleaned <- all_trips %>%
+  filter(!(ride_length < 0))
+
+# remove entradas que não possuem nome das estações
+all_trips_cleaned <- all_trips_cleaned %>%
+    filter(
+      !(is.na(start_station_name) |
+          start_station_name == "")
+      ) %>% 
+  
+  filter(
+    !(is.na(end_station_name) |
+        end_station_name == "")
+    )
+
+# remove entradas cujos nomes das estações estão capitalizados, pois estas foram feitas para teste e manutenção
+all_trips_cleaned <- all_trips_cleaned %>%
+    filter(
+      !(str_detect(start_station_name, "[:upper:]")
+        & !str_detect(start_station_name, "[:lower:]"))
+      )
+
+# cria um data frame para checar se há algum ID duplicado
+ride_id_check <- all_trips_cleaned %>%
+  count(ride_id) %>%
+  filter(n > 1)
+
+# 4.Entendendo o dataset
+
+# retorna os três tipos de bicicletas: classic, docked e electric
+unique(all_trips_cleaned$rideable_type)
+
+# cria um data frame que lista os nomes das estações
+station_name_check <- all_trips_cleaned %>%
+  group_by(start_station_name) %>%
+  count(start_station_name) 
+
+
+# lista as estações usadas em setembro de 2021
+Sep_2021_filter <- all_trips_cleaned %>%
+  filter(
+    month == "09"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# lista as estações usadas em outubro de 2021
+Oct_2021_filter <- all_trips_cleaned %>%
+  filter(
+    month == "10"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# lista as estações usadas em novembro de 2021
+Nov_2021_filter <- all_trips_cleaned %>%
+  filter(
+    month == "11"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# lista as estações usadas em dezembro de 2021
+Dec_2021_filter <- all_trips_cleaned %>%
+  filter(
+    month == "12"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# lista as estações usadas em janeiro de 2022
+Jan_2022_filter <- all_trips_cleaned %>%
+  filter(
+    month == "01"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# lista as estações usadas em fevereiro de 2022
+Feb_2022_filter <- all_trips_cleaned %>%
+  filter(
+    month == "02"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# lista as estações usadas em março de 2022
+Mar_2022_filter <- all_trips_cleaned %>%
+  filter(
+    month == "03"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# lista as estações usadas em abril de 2022
+Apr_2022_filter <- all_trips_cleaned %>%
+  filter(
+    month == "04"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# lista as estações usadas em maio de 2022
+May_2022_filter <- all_trips_cleaned %>%
+  filter(
+    month == "05"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# lista as estações usadas em junho de 2022
+Jun_2022_filter <- all_trips_cleaned %>%
+  filter(
+    month == "06"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# lista as estações usadas em julho de 2022
+Jul_2022_filter <- all_trips_cleaned %>%
+  filter(
+    month == "07"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# lista as estações usadas em agosto de 2022
+Aug_2022_filter <- all_trips_cleaned %>%
+  filter(
+    month == "08"
+    ) %>%
+  group_by(
+    start_station_name
+    ) %>%
+  count(
+    start_station_name
+    )
+
+# cria colunas para cada mês no data frame station_name_check
+station_name_check$Sep_2021 <- as.integer(station_name_check$start_station_name 
+                                          %in% Sep_2021_filter$start_station_name)
+station_name_check$Oct_2021 <- as.integer(station_name_check$start_station_name 
+                                          %in% Oct_2021_filter$start_station_name)
+station_name_check$Nov_2021 <- as.integer(station_name_check$start_station_name 
+                                          %in% Nov_2021_filter$start_station_name)
+station_name_check$Dec_2021 <- as.integer(station_name_check$start_station_name 
+                                          %in% Dec_2021_filter$start_station_name)
+station_name_check$Jan_2022 <- as.integer(station_name_check$start_station_name 
+                                          %in% Jan_2022_filter$start_station_name)
+station_name_check$Feb_2022 <- as.integer(station_name_check$start_station_name 
+                                          %in% Feb_2022_filter$start_station_name)
+station_name_check$Mar_2022 <- as.integer(station_name_check$start_station_name 
+                                          %in% Mar_2022_filter$start_station_name)
+station_name_check$Apr_2022 <- as.integer(station_name_check$start_station_name 
+                                          %in% Apr_2022_filter$start_station_name)
+station_name_check$May_2022 <- as.integer(station_name_check$start_station_name 
+                                          %in% May_2022_filter$start_station_name)
+station_name_check$Jun_2022 <- as.integer(station_name_check$start_station_name 
+                                          %in% Jun_2022_filter$start_station_name)
+station_name_check$Jul_2022 <- as.integer(station_name_check$start_station_name 
+                                          %in% Jul_2022_filter$start_station_name)
+station_name_check$Aug_2022 <- as.integer(station_name_check$start_station_name
+                                          %in% Aug_2022_filter$start_station_name)
+
+# adiciona a coluna da soma de vezes em que cada estação foi usada em cada mês
+station_name_check$count <- rowSums(station_name_check[,3:14])
+
+# 5.Salvando os datasets
+
+# salva o dataset limpo
+fwrite(
+  all_trips_cleaned, 
+  "C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/all_trips_cleaned.csv", 
+  col.names = TRUE,
+  row.names = FALSE
+  )
+
+# salva o dataset original
+fwrite(
+  all_trips, 
+  "C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/all_trips_raw.csv",
+  col.names = TRUE, 
+  row.names = FALSE
+  )
+
+# salva o dataset dos tipos de bicicletas
+fwrite(
+  rideable_type_check, 
+  "C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/rideable_type_check.csv",
+  col.names = TRUE, 
+  row.names = FALSE
+  )
+
+# salva o dataset das estações
+fwrite(
+  station_name_check, 
+  "C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/station_name_check.csv",
+  col.names = TRUE, 
+  row.names = FALSE
+  )
