@@ -1,0 +1,792 @@
+# 1.Carregando os pacotes e o dataset limpo
+
+library(tidyverse)
+library(data.table)
+library(viridis)
+library(ggpubr)
+
+all_trips_cleaned <- fread("C:/Users/caear/OneDrive/Área de Trabalho/cyclistics_data/csv_files/all_trips_cleaned.csv")
+
+# 2.Estações mais populares
+
+library(leaflet)
+library(htmlwidgets)
+library(htmltools)
+
+# cria um data frame que agrupa o número de viagens por estação e inclui coordenadas para cada estação
+map_data <- all_trips_cleaned %>%
+  
+  select(
+    start_station_name, 
+    start_lat, 
+    start_lng
+    ) %>%
+  
+  group_by(
+    start_station_name
+    ) %>%
+  
+  mutate(
+    numtrips = n()
+    ) %>%
+  
+  distinct(
+    start_station_name,  
+    .keep_all = TRUE
+    )
+
+# verifica o maior número de viagens para referência
+max(map_data[[ 'numtrips']])
+
+# cria uma sequência de valores que servirão como chave no mapa para agrupar as estações com número semelhante de viagens
+mybins <- seq(0, 80000, by = 10000)
+
+# atribui a paleta de cores viridis para mostrar visualmente o quão popular cada estação é
+mypalette <- colorBin(
+  palette ="viridis",
+  domain = map_data$numtrips,
+  na.color = "transparent", 
+  bins = mybins
+  )
+
+# prepara o texto que será mostrado quando os usuários interagirem com o mapa
+mytext <- paste(
+  "Station name: ", map_data$start_station_name, "<br/>",
+  "Number of trips: ", map_data$numtrips, sep = "" 
+  ) %>%
+  lapply(htmltools::HTML)
+
+# cria o mapa interativo
+p1 <- leaflet(map_data) %>% 
+  addTiles() %>%  
+  
+  # define as cordenadas sobre Chicago
+  setView(
+    lng = -87.6298, lat = 41.8781, zoom = 11.5 
+    ) %>% 
+  
+  # define o estilo do mapa
+  addProviderTiles("Esri.WorldGrayCanvas") %>%
+  
+  # adiciona círculos para representar cada estação, cor para mostrar o quão popular é cada estação e uma interface interativa para mostrar os detalhes
+  addCircleMarkers(
+    ~ start_lng, ~ start_lat, 
+    fillColor = ~ mypalette(numtrips), 
+    fillOpacity = 0.7, 
+    color = "white", 
+    radius = 8, 
+    stroke = FALSE,
+    label = mytext,
+    labelOptions = labelOptions(
+      style = list( 
+        "font-weight" = "normal", 
+        padding = "3px 8px"
+        ), 
+      textsize = "13px", 
+      direction = "auto"
+      ) 
+    ) %>%
+  
+  # adiciona a legenda 
+  addLegend( 
+    pal = mypalette, 
+    values = ~ numtrips, 
+    opacity = 0.9,
+    title = "Number of trips", 
+    position = "bottomright"
+    )
+
+
+# cria um data frame que agrupa o número de viagens de membros anuais por estação e inclui coordenadas para cada estação
+map_data_mem <- all_trips_cleaned %>%
+
+  filter(
+    member_casual == "member"
+    ) %>%
+
+  select(
+    start_station_name, 
+    start_lat, 
+    start_lng
+    ) %>%
+  
+  group_by(
+    start_station_name
+    ) %>%
+  
+  mutate(
+    numtrips = n()
+    ) %>%
+  
+  distinct(
+    start_station_name,  
+    .keep_all = TRUE
+    )
+
+# verifica o maior número de viagens para referência
+max(map_data_mem[[ 'numtrips']])
+
+# cria uma sequência de valores que servirão como chave no mapa para agrupar as estações com número semelhante de viagens
+mybins <- seq(0, 30000, by = 10000)
+
+# atribui a paleta de cores viridis para mostrar visualmente o quão popular cada estação é
+mypalette <- colorBin(
+  palette ="viridis",
+  domain = map_data$numtrips,
+  na.color = "transparent", 
+  bins = mybins
+  )
+
+# cria o mapa interativo
+p1_mem <- leaflet(map_data_mem) %>% 
+  addTiles() %>%  
+  
+  # define as cordenadas sobre Chicago
+  setView(
+    lng = -87.6298, lat = 41.8781, zoom = 11.5 
+    ) %>% 
+  
+  # define o estilo do mapa
+  addProviderTiles("Esri.WorldGrayCanvas") %>%
+  
+  # adiciona círculos para representar cada estação, cor para mostrar o quão popular é cada estação e uma interface interativa para mostrar os detalhes
+  addCircleMarkers(
+    ~ start_lng, ~ start_lat, 
+    fillColor = ~ mypalette(numtrips), 
+    fillOpacity = 0.7, 
+    color = "white", 
+    radius = 8, 
+    stroke = FALSE,
+    label = mytext,
+    labelOptions = labelOptions(
+      style = list( 
+        "font-weight" = "normal", 
+        padding = "3px 8px"
+        ), 
+      textsize = "13px", 
+      direction = "auto"
+      ) 
+    ) %>%
+  
+  # adiciona a legenda 
+  addLegend( 
+    pal = mypalette, 
+    values = ~ numtrips, 
+    opacity = 0.9,
+    title = "Number of trips", 
+    position = "bottomright"
+    )
+
+# cria um data frame que agrupa o número de viagens de membros casuais por estação e inclui coordenadas para cada estação
+map_data_cas <- all_trips_cleaned %>%
+
+  filter(
+    member_casual == "casual"
+    ) %>%
+
+  select(
+    start_station_name, 
+    start_lat, 
+    start_lng
+    ) %>%
+  
+  group_by(
+    start_station_name
+    ) %>%
+  
+  mutate(
+    numtrips = n()
+    ) %>%
+  
+  distinct(
+    start_station_name,  
+    .keep_all = TRUE
+    )
+
+# verifica o maior número de viagens para referência
+max(map_data_cas[[ 'numtrips']])
+
+# cria uma sequência de valores que servirão como chave no mapa para agrupar as estações com número semelhante de viagens
+mybins <- seq(0, 60000, by = 10000)
+
+# atribui a paleta de cores viridis para mostrar visualmente o quão popular cada estação é
+mypalette <- colorBin(
+  palette ="viridis",
+  domain = map_data$numtrips,
+  na.color = "transparent", 
+  bins = mybins
+  )
+
+# cria o mapa interativo
+p1_cas <- leaflet(map_data_cas) %>% 
+  addTiles() %>%  
+  
+  # define as cordenadas sobre Chicago
+  setView(
+    lng = -87.6298, lat = 41.8781, zoom = 11.5 
+    ) %>% 
+  
+  # define o estilo do mapa
+  addProviderTiles("Esri.WorldGrayCanvas") %>%
+  
+  # adiciona círculos para representar cada estação, cor para mostrar o quão popular é cada estação e uma interface interativa para mostrar os detalhes
+  addCircleMarkers(
+    ~ start_lng, ~ start_lat, 
+    fillColor = ~ mypalette(numtrips), 
+    fillOpacity = 0.7, 
+    color = "white", 
+    radius = 8, 
+    stroke = FALSE,
+    label = mytext,
+    labelOptions = labelOptions(
+      style = list( 
+        "font-weight" = "normal", 
+        padding = "3px 8px"
+        ), 
+      textsize = "13px", 
+      direction = "auto"
+      ) 
+    ) %>%
+  
+  # adiciona a legenda 
+  addLegend( 
+    pal = mypalette, 
+    values = ~ numtrips, 
+    opacity = 0.9,
+    title = "Number of trips", 
+    position = "bottomright"
+    )
+
+
+# 3.Época mais popular do ano
+
+# organiza os dias da semana
+all_trips_cleaned$day_of_week <- ordered(
+  all_trips_cleaned$day_of_week, 
+  levels = c(
+    "segunda-feira", "terça-feira", "quarta-feira", "quinta-feira",
+    "sexta-feira", "sábado", "domingo"
+    )
+  )
+
+# cria um data frame do número de viagens por data
+heat_map_data <- all_trips_cleaned %>%
+  
+  select(
+    YMD, 
+    day_of_week, 
+    week, 
+    year
+    ) %>%
+  
+  group_by(
+    YMD
+    ) %>%
+  
+  mutate(
+    numtrips = n()
+    ) %>%
+  
+  distinct(
+    YMD, 
+    .keep_all = TRUE
+    )
+
+# muda o tipo da coluna week de chr para num
+heat_map_data$week <- as.numeric(heat_map_data$week)
+
+# cria um mapa de calor para ressaltar a época mais popular do ano
+p2 <- ggplot(
+  heat_map_data,
+  aes(
+    x = week, 
+    y = day_of_week, 
+    fill = numtrips
+    )
+  ) + 
+  
+  # usa o esquema de cor viridis para representar a popularidade de cada dia
+  scale_fill_viridis(
+    option = "D",
+    direction = 1,
+    name = "Number of trips"
+    ) +
+  
+  # cria um mapa de calor retangular
+  geom_tile(
+    colour = "white", 
+    na.rm = FALSE
+    ) + 
+  
+  # separa os mapas por ano
+  facet_wrap(
+    "year", 
+    ncol = 1
+    ) + 
+  
+  # reverte o eixo y para que os dias da semana sejam lidos verticalmente de segunda a domingo 
+  scale_y_discrete(
+    limits = rev
+    ) +
+  
+  # adiciona os meses do ano ao eixo x 
+  scale_x_continuous(
+    expand = c(0, 0),
+    breaks = seq(1, 52, length = 12),
+    labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    ) +
+  
+  # Define o tema claro 
+  theme_light() +
+  
+  # Remove labels desnecessários
+  theme(
+    axis.title = element_blank()
+    )
+
+# cria um data frame do número de viagens por data e tipo de membro
+heat_map_data_mem_cas <- all_trips_cleaned %>%
+  
+  select(
+    YMD, 
+    day_of_week, 
+    week, 
+    year, 
+    member_casual,
+  ) %>%
+  
+  group_by(
+    member_casual, 
+    YMD
+  ) %>%
+  
+  mutate(
+    numtrips = n()
+  ) %>%
+  
+  distinct(
+    YMD, 
+    member_casual,
+    .keep_all = TRUE
+  )
+
+# muda o tipo da coluna week de chr para num
+heat_map_data_mem_cas$week <- as.numeric(heat_map_data_mem_cas$week)
+
+# cria um data frame só para membros anuais
+mem_filter_heat_map <- heat_map_data_mem_cas %>%
+  filter(member_casual == "member")
+
+# cria um data frame só para membros casuais
+cas_filter_heat_map <- heat_map_data_mem_cas %>%
+  filter(member_casual == "casual")
+
+# cria um mapa de calor para ressaltar a época mais popular do ano para membros anuais
+p2a_member <- ggplot(
+  mem_filter_heat_map,
+  aes(
+    x = week, 
+    y = day_of_week, 
+    fill = numtrips
+    )
+  ) + 
+  
+  # usa o esquema de cor viridis para representar a popularidade de cada dia
+  scale_fill_viridis(
+    option = "D",
+    direction = 1,
+    name = "Number of trips"
+    ) +
+  
+  # cria um mapa de calor retangular
+  geom_tile(
+    colour = "white", 
+    na.rm = FALSE
+    ) + 
+  
+  # separa os mapas por ano
+  facet_wrap(
+    "year", 
+    ncol = 1
+    ) + 
+  
+  # reverte o eixo y para que os dias da semana sejam lidos verticalmente de segunda a domingo 
+  scale_y_discrete(
+    limits = rev
+    ) +
+  
+  # adiciona os meses do ano ao eixo x 
+  scale_x_continuous(
+    expand = c(0, 0),
+    breaks = seq(1, 52, length = 12),
+    labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    ) +
+  
+  # Define o tema claro
+  theme_light() +
+  
+  # Remove labels desnecessários
+  theme(
+    axis.title = element_blank()
+    ) +
+  
+  # adiciona o título 
+  labs(title = "Member Riders") 
+
+# cria um mapa de calor para ressaltar a época mais popular do ano para membros casuais
+p2a_casual <- ggplot(
+  cas_filter_heat_map,
+  aes(
+    x = week, 
+    y = day_of_week, 
+    fill = numtrips
+    )
+  ) + 
+  
+  # usa o esquema de cor viridis para representar a popularidade de cada dia
+  scale_fill_viridis(
+    option = "D",
+    direction = 1,
+    name = "Number of trips"
+    ) +
+  
+  # cria um mapa de calor retangular
+  geom_tile(
+    colour = "white", 
+    na.rm = FALSE
+    ) + 
+  
+  # separa os mapas por ano
+  facet_wrap(
+    "year", 
+    ncol = 1
+    ) + 
+  
+  # reverte o eixo y para que os dias da semana sejam lidos verticalmente de segunda a domingo 
+  scale_y_discrete(
+    limits = rev
+    ) +
+  
+  # adiciona os meses do ano ao eixo x 
+  scale_x_continuous(
+    expand = c(0, 0),
+    breaks = seq(1, 52, length = 12),
+    labels = c("Jan", "Feb", "Mar", "Apr", "May", "Jun", 
+               "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+    ) +
+  
+  # Define o tema claro
+  theme_light() +
+  
+  # Remove labels desnecessários
+  theme(
+    axis.title = element_blank()
+    ) +
+  
+  # adiciona o título 
+  labs(title = "Casual Riders") 
+
+# combina os dois mapas de calor em um só
+p2a <- ggarrange(
+  p2a_member, 
+  p2a_casual, 
+  ncol = 1, 
+  nrow = 2,
+  common.legend = TRUE, 
+  legend = "right"
+  )
+
+# 4.Hora mais popular
+
+# muda o tipo da coluna da hora para o formato adequado
+all_trips_cleaned$ToD_convert <- as.POSIXct(all_trips_cleaned$ToD, format = "%H:%M:%S")
+
+# agrupa o tempo por horas
+all_trips_cleaned$by60 <- cut(
+  all_trips_cleaned$ToD_convert, 
+  breaks = "60 mins"
+  )
+
+# cria um data frame que conta o número de viagens por hora
+circular_bar_chart_data <- all_trips_cleaned %>%
+  
+  group_by(
+    by60,
+    member_casual
+  ) %>%
+  
+  mutate(
+    numtrips_0000s = (n()/1000)
+  ) %>%
+  
+  distinct(
+    by60, 
+    member_casual, 
+    numtrips_0000s
+  )
+
+# cria um gráfico de barras circular que mostra a popularidade de cada hora
+p3 <- ggplot(circular_bar_chart_data) +
+  
+  # cria um painel customizado 
+  geom_hline(
+    aes(yintercept = y), 
+    data.frame(y = c(0:4) * 125),
+    color = "lightgrey"
+  ) + 
+  
+  # cria o gráfico de barras empilhadas
+  geom_bar(
+    aes(
+      x = by60,
+      y = numtrips_0000s,
+      fill = member_casual
+    ), 
+    stat="identity"
+  ) +
+  
+  # cria o formato circular que começa na linha do meio  
+  coord_polar(start = -0.135, direction = 1) + 
+  ylim(-600, 500) +
+  
+  # adiciona o conteúdo do eixo x 
+  annotate(
+    x = 1,
+    y = -50,
+    label = "00:00",
+    geom = "text",
+    size = 2,
+  ) +
+  annotate(
+    x = 2,
+    y = -50,
+    label = "01:00", 
+    geom = "text",
+    size = 2,
+  ) +
+  annotate(
+    x = 3,
+    y = -50,
+    label = "02:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 4,
+    y = -50,
+    label = "03:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 5,
+    y = -50,
+    label = "04:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x= 6,
+    y=-50,
+    label = "05:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 7,
+    y = -50,
+    label = "06:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 8,
+    y = -50,
+    label = "07:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 9,
+    y = -50,
+    label = "08:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 10,
+    y = -50,
+    label = "09:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 11,
+    y = -50,
+    label = "10:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 12,
+    y = -50,
+    label = "11:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 13,
+    y = -50,
+    label = "12:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 14,
+    y = -50,
+    label = "13:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 15,
+    y = -50,
+    label = "14:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 16,
+    y = -50,
+    label = "15:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 17,
+    y = -50,
+    label = "16:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 18,
+    y = -50,
+    label = "17:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 19,
+    y = -50,
+    label = "18:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 20,
+    y = -50,
+    label = "19:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 21,
+    y = -50,
+    label = "20:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 22,
+    y = -50,
+    label = "21:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 23,
+    y = -50,
+    label = "22:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  annotate(
+    x = 24,
+    y = -50,
+    label = "23:00", 
+    geom = "text", 
+    size = 2,
+  ) +
+  
+  # adiciona o conteúdo do eixo y 
+  annotate(
+    x = 24,
+    y = 125,
+    label = "125,000",
+    geom = "text",
+    size = 2.5, 
+    angle = 15
+  ) +
+  annotate(
+    x = 24,
+    y = 250,
+    label = "250,000",
+    geom = "text",
+    size = 2.5, 
+    angle = 15
+  ) +
+  annotate(
+    x = 24,
+    y = 375,
+    label = "375,000",
+    geom = "text",
+    size = 2.5, 
+    angle = 15
+  ) +
+  annotate(
+    x = 24,
+    y = 500,
+    label = "500,000 trips",
+    geom = "text",
+    size = 2.5, 
+    angle = 15
+  ) +
+ 
+  # aplica o esquema de cor viridis 
+  scale_fill_viridis_d() +
+  
+  # define o tema claro
+  theme_light() +
+  
+  # remove labels desnecessárias 
+  theme(
+    axis.title = element_blank(),
+    axis.ticks = element_blank(),
+    axis.text = element_blank(),
+    legend.position = "bottom",
+    legend.title = element_blank(),
+  )
+
+# cria a função para calcular a moda
+getmode <- function(v) {
+  uniqv <- unique(v)
+  uniqv[which.max(tabulate(match(v, uniqv)))]
+}
+
+# cria um data frame que resume estatisticamente o dataset limpo 
+statistic_summary <- all_trips_cleaned %>%
+  
+  group_by(
+    member_casual
+  ) %>%
+  
+  summarize(
+    ave_ride_length_mins = (mean(ride_length, na.rm = TRUE))/60, 
+    mode_day_of_week = getmode(day_of_week),
+    mode_month = getmode(month),
+    mode_time_of_day = getmode(ToD), 
+    ave_time_of_day = format(mean(ToD_convert, na.rm = TRUE), "%H:%M:%S")
+  ) 
